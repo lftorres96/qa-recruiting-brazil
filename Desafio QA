@@ -1,0 +1,200 @@
+checkout.rb********
+
+
+class CheckOut
+
+    #inicialização das variaveis.
+    def initialize products, discount_rules
+        @products, @discount_rules = products, discount_rules
+        @items = ""
+    end
+
+    def scan item
+        if !@products.include? item 
+            # Não foi possível adicionar o produto #{item}          
+            return
+        end
+        @items += item
+        #puts "Produto #{item} adicionado"             
+        #puts "Carrinho atual #{@items}"
+    end
+
+    def total
+        total = 0
+        @products.each do |item, price| 
+            qtd = @items.chars.grep(item).size
+            total += item_total_price_calculator(item, price, qtd)
+        end
+        return total 
+    end
+
+    # Método que calcula o valor total de um item no carrinho aplicando as regras de descontos
+    # 
+    # Params:
+    # - item: Representa um item adicionado ao carrinho
+    # - price: Representa o valor unitário do item
+    # - qtd: Quantidade do item no carrinho 
+    #
+    # Returns:
+    # - O valor total do item com as regras de descontos aplicadas
+    private def item_total_price_calculator item, price, qtd
+        item_total_price = 0
+        item_rules = Hash[]
+
+        item_rules = @discount_rules[item] if @discount_rules.include? item
+
+        item_rules.each do |rule_qtd, rule_price| 
+            number_of_promotions = qtd / rule_qtd
+            item_total_price += number_of_promotions * rule_price
+            qtd = qtd % rule_qtd
+        end
+
+        item_total_price += price * qtd
+
+        return item_total_price
+    end
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+teste.rb***********
+
+
+
+
+
+require_relative "checkout"
+require "test/unit"
+
+class TestPrice < Test::Unit::TestCase
+
+    def setup
+      @PRICES = Hash[
+        "A" => 50, 
+        "B" => 30, 
+        "C" => 20, 
+        "D" => 15]
+      @RULES = Hash[
+        "A" => Hash[3 => 130], 
+        "B" => Hash[2 => 45]]
+    end
+
+    def price(goods)
+        co = CheckOut.new(@PRICES, @RULES)
+        goods.split(//).each { |item| co.scan(item) }
+        co.total
+    end
+
+    def test_totals
+        assert_equal(  0, price(""))
+        assert_equal(  0, price("Z"))
+        assert_equal( 50, price("A"))
+        assert_equal( 80, price("AB"))
+        assert_equal(115, price("CDBA"))
+
+        assert_equal(100, price("AA"))
+        assert_equal(130, price("AAA"))
+        assert_equal(180, price("AAAA"))
+        assert_equal(230, price("AAAAA"))
+        assert_equal(260, price("AAAAAA"))
+
+        assert_equal(160, price("AAAB"))
+        assert_equal(175, price("AAABB"))
+        assert_equal(190, price("AAABBD"))
+        assert_equal(190, price("DABABA"))
+    end
+
+    def test_incremental
+        co = CheckOut.new(@PRICES, @RULES)
+        assert_equal( 0, co.total)
+        co.scan("A"); assert_equal( 50, co.total)
+        co.scan("B"); assert_equal( 80, co.total)
+        co.scan("A"); assert_equal(130, co.total)
+        co.scan("A"); assert_equal(160, co.total)
+        co.scan("B"); assert_equal(175, co.total)
+    end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mensagem.feature******
+
+
+
+# language: pt
+
+Funcionalidade: Enviar mensangem para um contato no Whatsapp
+  Como um usuario posso enviar uma mensagem para um usuario recentemente adicionado em minha lista
+  Também posso enviar uma mensagem para um contato existente
+
+Cenário: Enviar uma mensagem para um contato recentemente adicionado em minha lista
+  Dado que eu esteja no app do Whatsapp
+  E clico em "Contatos"
+  Quando selecionar um contato novo na lista
+  Então posso enviar uma mensagem para o contato novo
+  
+Cenário: Enviar uma mensagem para um contato existente
+  Dado que eu esteja no app do Whatsapp
+  Quando selecionar um contato existente na lista de contatos ou na aba de conversas recentes
+  Então posso enviar uma mensagem para um contato existente.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+status.feature*********
+
+
+# language: pt
+
+Funcionalidade: Status Whatsapp
+  Como um usuario posso adicionar meus status
+  Também posso visualizar o status atualizado pelos meus contatos
+
+Cenário: Adicionar atualização no status
+  Dado que eu esteja no app do Whatsapp
+  E seleciono a aba "Status"
+  E clico no "+" para adicionar uma atualização
+  Quando seleciono uma imagem
+  Então posso visualizar a imagem
+
+Cenário: Visualizar atualização no status de outros usuarios
+  Dado que eu esteja no app do Whatsapp
+  E seleciono a aba "Status"
+  Quando seleciono o usuario que desejo ver o status
+  Então posso visualizar o status desejado
